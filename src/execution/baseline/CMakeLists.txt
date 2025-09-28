@@ -2,6 +2,26 @@ if(NOT (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "
     message(FATAL_ERROR "The TPDE baseline backend can only be built for linux x86_64 targets.")
 endif()
 
+## Add baseline backend to the runner target
+target_sources(runner PRIVATE
+        ${CMAKE_CURRENT_LIST_DIR}/BaselineBackend.cpp
+)
+
+## Add TPDE as a vendored dependency subdirectory
+# properly handle asan builds
+if (CMAKE_BUILD_TYPE MATCHES "ASAN")
+    add_definitions(-DTPDE_ASAN_BUILD=ON)
+endif ()
+set(TPDE_INCLUDE_TESTS OFF CACHE BOOL "Include TPDE tests")
+set(TPDE_ENABLE_LLVM OFF CACHE BOOL "Enable LLVM support in TPDE")
+set(TPDE_ENABLE_COVERAGE OFF CACHE BOOL "Enable coverage support in TPDE")
+set(TPDE_BUILD_DOCS OFF CACHE BOOL "Build documentation for TPDE")
+set(TPDE_ENABLE_ENCODEGEN ON CACHE BOOL "Enable encodegen in TPDE")
+add_subdirectory(${CMAKE_SOURCE_DIR}/vendored/tpde ${CMAKE_BINARY_DIR}/vendored/tpde)
+target_link_libraries(runner PRIVATE tpde)
+target_include_directories(runner PRIVATE tpde)
+
+## Setup / run tpde encodegen to generate snippet encoders
 set(SNIPPED_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/generated)
 file(MAKE_DIRECTORY ${SNIPPED_INCLUDE_DIR})
 
